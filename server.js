@@ -7,19 +7,18 @@ const path = require('path');
 const app = express();
 const server = http.createServer(app);
 
-// Socket.IO को सर्वर पर अटैच करें
-// ध्यान दें: 'path' ऑप्शन सेट करें ताकि Socket.IO केवल /api/socket पर सुने
-const io = socketIo(server, {
-    path: '/api/socketio', // <-- यह महत्वपूर्ण है!
+const io = new socketIo.Server(server, { // <-- यहां बदलाव है, 'new' का उपयोग किया
+    path: '/api/socketio', // Vercel के लिए सही पाथ
     cors: {
-        origin: "*", // सभी ओरिजिन से कनेक्शन की अनुमति दें (विकास के लिए ठीक, प्रोडक्शन में विशिष्ट URL दें)
+        origin: "*", // सभी ओरिजिन से कनेक्शन की अनुमति दें
         methods: ["GET", "POST"]
-    }
+    },
+    transports: ['websocket', 'polling'] // सुनिश्चित करें कि वेबसॉकेट प्राथमिकता हो
 });
 
 const PORT = process.env.PORT || 3000;
 
-// पब्लिक फ़ोल्डर से स्टैटिक फ़ाइलें सर्व करें
+// पब्लिक फोल्डर से स्टैटिक फाइलें सर्व करें
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Socket.IO कनेक्शन हैंडलिंग
@@ -28,7 +27,7 @@ io.on('connection', (socket) => {
 
     socket.on('chatMessage', (msg) => {
         console.log('Message received:', msg);
-        io.emit('message', msg);
+        io.emit('message', msg); // सभी को मैसेज भेजें
     });
 
     socket.on('typing', (data) => {
@@ -40,10 +39,12 @@ io.on('connection', (socket) => {
     });
 });
 
-// Vercel को यह बताने के लिए कि यह एक सर्वरलेस फ़ंक्शन है, हमें इसे module.exports के रूप में एक्सपोर्ट करना होगा
+// Vercel के लिए: ऐप को सर्वरलेस फ़ंक्शन के रूप में एक्सपोर्ट करें
+// यह Vercel को आपके HTTP अनुरोधों को हैंडल करने देता है, जिसमें Socket.IO अपग्रेड भी शामिल है
 module.exports = app;
 
 // लोकल डेवलपमेंट के लिए सर्वर को लिस्टेन करवाएं
+// यह हिस्सा तभी चलेगा जब आप `node server.js` चलाएंगे, Vercel पर नहीं
 if (require.main === module) {
     server.listen(PORT, () => {
         console.log(`Server running on http://localhost:${PORT}`);
