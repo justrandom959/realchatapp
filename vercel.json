@@ -1,0 +1,14 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/socketio/(.*)",
+      "destination": "/server.js"
+    }
+  ],
+  "functions": {
+    "server.js": {
+      "memory": 1024,
+      "maxDuration": 300 // 5 minutes, adjust if needed for longer sessions
+    }
+  }
+}
